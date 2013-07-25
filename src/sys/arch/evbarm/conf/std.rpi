@@ -1,0 +1,24 @@
+#	std.rpi,v 1.8 2013/06/22 15:50:17 matt Exp
+#
+# standard NetBSD/evbarm for Raspberry Pi options
+
+machine		evbarm arm
+include 	"arch/evbarm/conf/std.evbarm"
+
+# Pull in Raspberry Pi config definitions.
+include		"arch/evbarm/conf/files.rpi"
+
+options 	__HAVE_CPU_COUNTER
+options 	__HAVE_FAST_SOFTINTS		# should be in types.h
+options 	__HAVE_CPU_UAREA_ALLOC_IDLELWP
+options 	TPIDRPRW_IS_CURCPU
+options 	ARM_HAS_VBAR
+options 	KERNEL_BASE_EXT=0xc0000000
+options 	URTWN_DOTG_WORKAROUND
+
+options 	EVBARM_BOARDTYPE="rpi"
+makeoptions	BOARDMKFRAG="${THISARM}/conf/mk.rpi"
+makeoptions	CPPFLAGS+="-I$S/../../../include"
+
+options 	ARM_INTR_IMPL="<arch/arm/broadcom/bcm2835_intr.h>"
+options 	ARM_GENERIC_TODR

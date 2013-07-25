@@ -1,0 +1,16 @@
+#	Makefile.rumpnetcomp,v 1.6 2013/07/18 15:59:27 kefren Exp
+#
+
+RUMPNETCOMP=	agr bridge net net80211 netbt netinet netmpls npf
+RUMPNETCOMP+=	local shmif virtif
+
+RUMPNETSOCKIN=	sockin
+
+.for var in ${RUMPNETCOMP}
+RUMPNETLIBS+=lib${var}
+RUMPNETLDADD+=-lrumpnet_${var}
+.endfor
+
+.for var in ${RUMPNETSOCKIN}
+RUMPNETLIBS+=lib${var}
+.endfor
