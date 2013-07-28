@@ -177,9 +177,9 @@ MKDYNAMICROOT	If "no", build programs in /bin and /sbin statically,
 		install the shared linker into /libexec.
 		Default: yes
 
-MKELFTOOLCHAIN	If "yes", use BSD-licensed implementations of
+MKELFTOOLCHAIN	If not "no", use BSD-licensed implementations of
 		toolchain utilities (libelf, libdwarf, ar, nm, readelf,
-		etc.) from the ELFToolChain project in prefer to their
+		etc.) from the ELFToolChain project in preference to their
 		GNU counterparts.  If "no", do not use the BSD toolchain.
 		Default: "yes".
 
