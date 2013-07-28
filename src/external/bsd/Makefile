@@ -12,6 +12,9 @@ SUBDIR+= atf
 .if (${MKCRYPTO} != "no")
 SUBDIR+= pkg_install
 .endif
+.if (${MKELFTOOLCHAIN} != "no")
+SUBDIR+= elftoolchain
+.endif
 # IP Filter
 .if (${MKIPFILTER} != "no")
 SUBDIR+=ipf
