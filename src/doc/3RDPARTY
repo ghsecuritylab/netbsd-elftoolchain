@@ -325,6 +325,20 @@ Notes:
 Use src/gnu/dist/diffutils/diffutils2netbsd for preparing the source tree
 for the import.
 
+Package:	elftoolchain
+Version:	branches/release-branch-0.6 @ [2611]
+Current Vers:	branches/release-branch-0.6 @ [2611]
+Maintainer:	The Elftoolchain Project
+Archive Site:	http://sourceforge.net/projects/elftoolchain/files/Sources/
+Home Page:	http://elftoolchain.sourceforge.net/
+Mailing List:	elftoolchain-developers@lists.sourceforge.net
+License:	BSD (2-clause)
+Responsible:	jkoshy
+Location:	external/bsd/elftoolchain/dist
+Notes:
+Use src/external/bsd/elftoolchain/elftoolchain2netbsd for preparing the
+source tree for import.
+
 Package:	expat
 Version:	2.1.0
 Current Vers:	2.1.0
