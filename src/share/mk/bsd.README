@@ -720,8 +720,8 @@ TOOLCHAIN_MISSING
 		TOOLCHAIN_MISSING is conditionally assigned the value "yes".
 		Otherwise, the variable is unconditionally assigned the
 		value "no".
-		If not "no", ${MKBINUTILS}, ${MKGCC}, and ${MKGDB} are
-		unconditionally assigned the value "no".
+		If not "no", ${MKBINUTILS}, ${MKELFTOOLCHAIN}, ${MKGCC},
+		and ${MKGDB} are unconditionally assigned the value "no".
 
 EXTERNAL_TOOLCHAIN
 		This variable is not directly set by <bsd.own.mk>, but
