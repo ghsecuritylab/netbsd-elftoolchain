@@ -1,0 +1,202 @@
+#!/bin/sh
+#
+#	$NetBSD$
+#
+# Copyright (c) 2012 The NetBSD Foundation, Inc.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE NETBSD FOUNDATION, INC. AND CONTRIBUTORS
+# ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+# TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR CONTRIBUTORS
+# BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+
+# Convert an Elftoolchain source tree into NetBSD, under
+# "src/external/bsd/elftoolchain".
+#
+# Instructions for importing a new elftoolchain release:
+#
+#	$ cd src/external/bsd/elftoolchain
+#
+#	# Retrieve sources from the upstream repository, either by
+#	# specifying an SVN URL to import OR by specifying a source
+#	# directory.  The "-D" option may be used to import from the
+#	# head of the default SVN branch.
+#	$ ./elftoolchain2netbsd -D     # Import from the default SVN branch.
+#	(OR)
+#	$ ./elftoolchain2netbsd SVNURL # Import from a specified SVN URL.
+#	(OR)
+#	$ ./elftoolchain2netbsd PATH/TO/SRC/DIRECTORY
+#
+#	# Check the import.
+#	$ cd src/external/bsd/elftoolchain/dist
+#	* Check the Makefiles in bin/, and lib, to see if any changes
+#	  are needed.
+#	* Update distrib/sets if necessary.
+#
+#	# Import the sources into the CVS repository.
+#	$ cvs import -m "Import ElfToolChain BRANCH@SVNREV." \
+#	    src/external/bsd/elftoolchain/dist ELFTOOLCHAIN \
+#	    elftoolchain-BRANCH-SVNREV
+
+default_branch="release-branch-0.6"
+svn_host="http://elftoolchain.svn.sourceforge.net"
+svn_root="${svn_host}/svnroot/elftoolchain/branches"
+svn_default=${svn_root}/${default_branch}
+
+usage()
+{
+    exec >&2
+
+    if [ -n "${*}" ]; then echo "${@}"; echo; fi
+
+    echo "Usage: ${0} [options] [SVNURL|DIRECTORY]"
+    echo
+    echo "	Import an ElfToolChain source tree into NetBSD."
+    echo
+    echo "Supported options are:"
+    echo "	-D	Import the default branch: [${svn_default}]."
+    echo "	-v	Be verbose."
+    exit 1
+}
+
+while getopts "Dv" option
+do
+    case ${option} in
+	'D')
+	    do_default=TRUE
+	    ;;
+	'v')
+	    verbose=TRUE
+	    ;;
+	'?')
+	    usage
+	    ;;
+    esac
+done
+
+shift `expr $OPTIND - 1`
+
+[ -n "${do_default}" -a ${#} -ne 0 ] && usage
+[ -z "${do_default}" -a ${#} -ne 1 ] && usage
+
+if [ -n "${do_default}" ]; then
+    src=${svn_root}/${default_branch}
+else
+    src=${1}
+fi
+
+externaldir=$(cd $(dirname $0); /bin/pwd)
+distdir=${externaldir}/dist
+
+if [ -d "${src}" ]; then
+    if ! grep -q elftoolchain ${src}/RELEASE-NOTES \
+	2> /dev/null; then
+	usage "ERROR: path \"${src}\" does not " \
+	    "contain an ElfToolChain release."
+    fi
+    do_svn=FALSE
+else
+    do_svn=TRUE
+fi
+
+# Rename the previous dist/ directory, if it exists.
+if [ -e ${distdir} ]; then
+    echo "Moving ${distdir} to ${distdir}.old"
+    mv ${distdir} ${distdir}.old
+fi
+
+# Bring in the source distribution
+if [ "${do_svn}" = TRUE ]; then
+    echo Exporting \"${src}\" to \"${distdir}\".
+    svn export ${src} ${distdir}
+else
+    mkdir ${distdir}
+    echo Copying \"${src}\" to \"${distdir}\".
+    (cd ${src}; pax -rw * ${distdir})
+fi
+
+echo Preparing \"${distdir}\".
+
+# Prune the imported tree.
+
+cd ${distdir}
+rm -r ./test ./documentation
+
+tmpfile=`mktemp /tmp/et2nbXXXXXX`
+trap "rm -f ${tmpfile};" 0 1 2 3 15
+
+# Add the $NetBSD$ keyword to the imported source tree.
+find . -type f -print | while read f; do
+
+    grep -q '\$NetBSD' "$f" && continue
+
+    do_prepend=YES
+    filemode=""
+
+    case "${f}" in
+	*.[0-9] )		# Manual page.
+	    pattern='.\" $NetBSD$'
+	    ;;
+	*.[chly] | *.m4 | */Version.map)	# C source code.
+	    pattern='/*	$NetBSD$ */'
+	    ;;
+	*/Makefile | */GNUmakefile | *.mk )	# Makefiles.
+	    pattern='# $NetBSD$'
+	    ;;
+        */INSTALL | */README | */RELEASE-NOTES) # Documentation.
+	    pattern='.. $NetBSD$'
+	    ;;
+	*/libelftc/make-toolchain-version | */common/native-elf-format | \
+	*/ar/benchmark/acp.sh)
+	    pattern='# $NetBSD$'
+	    do_prepend=NO	# Preserve line #1.
+	    filemode="+x"	# Preserve the execute bit.
+	    ;;
+        *)
+	    continue
+	    ;;
+    esac
+
+    if [ ${do_prepend} = YES ]; then
+	(echo "${pattern}"; cat "${f}") > ${tmpfile}
+    else
+	(cat "${f}"; echo "${pattern}") > ${tmpfile}
+    fi
+
+    mv ${tmpfile} ${f}
+
+    if [ -n "${filemode}" ]; then
+	chmod ${filemode} "${f}"
+    fi
+
+    [ -n "${verbose}" ] && echo Tagged: \"${f}\".
+
+done
+
+# Clean up.
+
+(
+    cd ${distdir}
+    find . -type d -name "CVS" -print | xargs rm -rf
+    find . -type f -print | xargs chmod u+rw,go+r
+    find . -type d -print | xargs chmod u+rwx,go+rx
+)
+
+echo Done.
