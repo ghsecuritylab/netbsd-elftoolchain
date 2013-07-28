@@ -177,6 +177,12 @@ MKDYNAMICROOT	If "no", build programs in /bin and /sbin statically,
 		install the shared linker into /libexec.
 		Default: yes
 
+MKELFTOOLCHAIN	If "yes", use BSD-licensed implementations of
+		toolchain utilities (libelf, libdwarf, ar, nm, readelf,
+		etc.) from the ELFToolChain project in prefer to their
+		GNU counterparts.  If "no", do not use the BSD toolchain.
+		Default: "yes".
+
 MKEXTSRC        If not "no", 'make build' also descends into either src/extsrc
 		to cross-build programs and libraries externally added by
 		users, and automatically enables creation of those sets.
